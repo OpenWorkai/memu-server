@@ -37,24 +37,27 @@ echo ""
 # Step 2: Check API keys
 echo "Step 2: Checking API keys..."
 
-if [ -z "$DEEPSEEK_API_KEY" ] && [ -z "$GEMINI_API_KEY" ]; then
+if [ -z "$DEEPSEEK_API_KEY" ] && [ -z "$GEMINI_API_KEY" ] && [ -z "$OPENROUTER_API_KEY" ]; then
     echo "⚠️  No API keys found in environment."
     echo ""
     echo "You need at least one free API key:"
     echo "  - DeepSeek (Free): https://platform.deepseek.com/"
     echo "  - Google Gemini (Free): https://aistudio.google.com/"
+    echo "  - OpenRouter (Free models): https://openrouter.ai/"
     echo ""
     echo "After getting a key, run:"
     echo "  export DEEPSEEK_API_KEY='sk-xxx'"
     echo "  # or"
     echo "  export GEMINI_API_KEY='xxx'"
+    echo "  # or"
+    echo "  export OPENROUTER_API_KEY='sk-or-xxx'"
     echo ""
     
     read -p "Do you want to set a key now? (y/n) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo ""
-        read -p "Choose provider (1=DeepSeek, 2=Gemini): " provider
+        read -p "Choose provider (1=DeepSeek, 2=Gemini, 3=OpenRouter): " provider
         
         if [ "$provider" = "1" ]; then
             read -p "Enter DeepSeek API key: " key
@@ -68,6 +71,12 @@ if [ -z "$DEEPSEEK_API_KEY" ] && [ -z "$GEMINI_API_KEY" ]; then
             echo "export GEMINI_API_KEY='$key'" >> ~/.zshrc
             FINAL_KEY="$key"
             KEY_VAR="GEMINI_API_KEY"
+        elif [ "$provider" = "3" ]; then
+            read -p "Enter OpenRouter API key: " key
+            export OPENROUTER_API_KEY="$key"
+            echo "export OPENROUTER_API_KEY='$key'" >> ~/.zshrc
+            FINAL_KEY="$key"
+            KEY_VAR="OPENROUTER_API_KEY"
         else
             echo "Invalid choice. Exiting."
             exit 1
@@ -86,6 +95,10 @@ else
         FINAL_KEY="$GEMINI_API_KEY"
         KEY_VAR="GEMINI_API_KEY"
         echo "✅ Found GEMINI_API_KEY"
+    elif [ -n "$OPENROUTER_API_KEY" ]; then
+        FINAL_KEY="$OPENROUTER_API_KEY"
+        KEY_VAR="OPENROUTER_API_KEY"
+        echo "✅ Found OPENROUTER_API_KEY"
     fi
 fi
 echo ""
@@ -96,9 +109,13 @@ echo "Step 3: Configuring LaunchAgent..."
 cp "$PLIST_FILE" "$PLIST_FILE.tmp"
 
 if [ "$KEY_VAR" = "DEEPSEEK_API_KEY" ]; then
-    sed -i '' "s|REPLACE_WITH_YOUR_DEEPSEEK_KEY|$FINAL_KEY|g" "$PLIST_FILE.tmp"
+    sed -i '' "s|REPLACE_WITH_YOUR_OPENROUTER_KEY|$FINAL_KEY|g" "$PLIST_FILE.tmp"
+    sed -i '' "s|<key>OPENROUTER_API_KEY</key>|<key>DEEPSEEK_API_KEY</key>|g" "$PLIST_FILE.tmp"
+elif [ "$KEY_VAR" = "GEMINI_API_KEY" ]; then
+    sed -i '' "s|REPLACE_WITH_YOUR_OPENROUTER_KEY|$FINAL_KEY|g" "$PLIST_FILE.tmp"
+    sed -i '' "s|<key>OPENROUTER_API_KEY</key>|<key>GEMINI_API_KEY</key>|g" "$PLIST_FILE.tmp"
 else
-    sed -i '' "s|REPLACE_WITH_YOUR_GEMINI_KEY|$FINAL_KEY|g" "$PLIST_FILE.tmp"
+    sed -i '' "s|REPLACE_WITH_YOUR_OPENROUTER_KEY|$FINAL_KEY|g" "$PLIST_FILE.tmp"
 fi
 
 mkdir -p "$HOME/Library/LaunchAgents"

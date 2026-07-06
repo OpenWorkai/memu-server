@@ -36,17 +36,23 @@ if [ -n "$DEEPSEEK_API_KEY" ]; then
 elif [ -n "$GEMINI_API_KEY" ]; then
     echo "   ✅ GEMINI_API_KEY is set"
     HAS_KEY=1
+elif [ -n "$OPENROUTER_API_KEY" ]; then
+    echo "   ✅ OPENROUTER_API_KEY is set"
+    HAS_KEY=1
 else
     echo "   ⚠️  No API keys found in environment"
     echo ""
     echo "   Get a free key from:"
     echo "   - DeepSeek: https://platform.deepseek.com/"
     echo "   - Gemini: https://aistudio.google.com/"
+    echo "   - OpenRouter: https://openrouter.ai/ (has free models)"
     echo ""
     echo "   Then set it:"
     echo "   export DEEPSEEK_API_KEY='sk-xxx'"
     echo "   # or"
     echo "   export GEMINI_API_KEY='xxx'"
+    echo "   # or"
+    echo "   export OPENROUTER_API_KEY='sk-or-xxx'"
     HAS_KEY=0
 fi
 echo ""

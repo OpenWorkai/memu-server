@@ -2,15 +2,20 @@
   "name": "memu-guardian",
   "description": "memu-server daily maintenance agent",
   "model": {
-    "provider": "deepseek",
-    "name": "deepseek-chat",
-    "api_key_env": "DEEPSEEK_API_KEY"
+    "provider": "openrouter",
+    "name": "google/gemini-2.0-flash-exp:free",
+    "api_key_env": "OPENROUTER_API_KEY"
   },
   "fallback_models": [
     {
-      "provider": "google",
-      "name": "gemini-2.0-flash-exp",
-      "api_key_env": "GEMINI_API_KEY"
+      "provider": "openrouter",
+      "name": "meta-llama/llama-3.3-70b-instruct:free",
+      "api_key_env": "OPENROUTER_API_KEY"
+    },
+    {
+      "provider": "openrouter",
+      "name": "qwen/qwen-2.5-72b-instruct:free",
+      "api_key_env": "OPENROUTER_API_KEY"
     }
   ],
   "system_prompt_file": "./config/guardian-system-prompt.md",
