@@ -1,0 +1,33 @@
+{
+  "name": "memu-guardian",
+  "description": "memu-server daily maintenance agent",
+  "model": {
+    "provider": "deepseek",
+    "name": "deepseek-chat",
+    "api_key_env": "DEEPSEEK_API_KEY"
+  },
+  "fallback_models": [
+    {
+      "provider": "google",
+      "name": "gemini-2.0-flash-exp",
+      "api_key_env": "GEMINI_API_KEY"
+    }
+  ],
+  "system_prompt_file": "./config/guardian-system-prompt.md",
+  "mcp_servers": {
+    "memu": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "/Users/myking/memu",
+        "python",
+        "-m",
+        "memu.mcp"
+      ],
+      "env": {}
+    }
+  },
+  "max_turns": 20,
+  "auto_approve": true
+}
