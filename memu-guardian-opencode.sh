@@ -1,6 +1,6 @@
 #!/bin/bash
 # memu-guardian - Daily maintenance agent using OpenCode CLI
-# Uses free models (DeepSeek/Gemini) to avoid cost issues
+# Uses free models (DeepSeek/Gemini/OpenRouter) to avoid cost issues
 
 set -e
 
@@ -31,14 +31,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
     exit 1
 fi
 
-# Verify API keys are set
-if [ -z "$DEEPSEEK_API_KEY" ] && [ -z "$GEMINI_API_KEY" ]; then
-    log "⚠️  Warning: No API keys found. Set DEEPSEEK_API_KEY or GEMINI_API_KEY"
-    log "   You can get free keys from:"
-    log "   - DeepSeek: https://platform.deepseek.com/"
-    log "   - Google AI Studio: https://aistudio.google.com/"
-    exit 1
-fi
+log "Using OpenCode built-in free models (no API key needed)"
 
 # Create maintenance task prompt
 TASK_FILE="$MEMU_ROOT/guardian-task-$(date +%Y%m%d-%H%M%S).txt"
@@ -58,63 +51,38 @@ cat > "$TASK_FILE" << 'EOF'
 
 开始执行任务。
 EOF
-)
-
-# Run OpenCode with free model
-log "Launching OpenCode with maintenance tasks..."
-
-# Use opencode CLI (assuming it's available)
-if command -v opencode &> /dev/null; then
-    # OpenCode CLI mode
-    echo "$TASKS_PROMPT" | opencode --model deepseek-chat --non-interactive >> "$LOG_FILE" 2>&1
-    EXIT_CODE=$?
-elif command -v openclaude &> /dev/null; then
-    # OpenClaude CLI mode  
-    echo "$TASKS_PROMPT" | openclaude --model gemini-2.0-flash --non-interactive >> "$LOG_FILE" 2>&1
-    EXIT_CODE=$?
-else
-    log "❌ OpenCode/OpenClaude CLI not found"
-    log "   Install: npm install -g @openai/opencode"
-    exit 1
-fi
-
-if [ $EXIT_CODE -eq 0 ]; then
-    log "✓ Maintenance tasks completed"
-else
-    log "⚠️  Some tasks may have failed (exit code: $EXIT_CODE)"
-fi
-
-# Generate summary report
-REPORT_FILE="$REPORT_DIR/guardian-$(date +%Y%m%d-%H%M%S).json"
-
-cat > "$REPORT_FILE" << EOF
-{
-  "timestamp": "$(date -Iseconds)",
-  "exit_code": $EXIT_CODE,
-  "log_file": "$LOG_FILE",
-  "last_lines": $(tail -20 "$LOG_FILE" | jq -R -s -c 'split("\n")')
-}
-EOF
-
-log "📊 Report saved: $REPORT_FILE"
-
-# Cleanup old reports (keep last 30)
-cd "$REPORT_DIR"
-ls -t guardian-*.json | tail -n +31 | xargs rm -f 2>/dev/null || true
-
-log "🛡️  memu-guardian completed"
-
-exit $EXIT_CODE
-EOF
 
 log "📝 Task file created: $TASK_FILE"
-log "🤖 Starting OpenCode agent with config: $CONFIG_FILE"
+log "🤖 Starting OpenCode agent with free model..."
 
-# Run OpenCode with the task
+# Run OpenCode with the task using built-in free models
 cd "$SCRIPT_DIR"
-if opencode --config "$CONFIG_FILE" < "$TASK_FILE" >> "$LOG_FILE" 2>&1; then
-    log "✅ Guardian maintenance completed successfully"
-    
+
+# Read task content
+TASK_CONTENT=$(cat "$TASK_FILE")
+
+# Try OpenCode built-in free models in order
+MODELS=(
+    "Big Pickle OpenCode Zen"
+    "DeepSeek V4 Flash Free OpenCode Zen"
+    "North Mini Code Free OpenCode Zen"
+    "Nemotron 3 Ultra Free"
+    "MiMo V2.5 Free"
+)
+
+SUCCESS=0
+for MODEL in "${MODELS[@]}"; do
+    log "Trying model: $MODEL"
+    if opencode run --model "$MODEL" --auto "$TASK_CONTENT" >> "$LOG_FILE" 2>&1; then
+        log "✅ Guardian maintenance completed successfully with $MODEL"
+        SUCCESS=1
+        break
+    else
+        log "⚠️  Model $MODEL failed, trying next..."
+    fi
+done
+
+if [ $SUCCESS -eq 1 ]; then
     # Clean up old task files (keep last 7 days)
     find "$MEMU_ROOT" -name "guardian-task-*.txt" -mtime +7 -delete 2>/dev/null || true
     
@@ -123,6 +91,6 @@ if opencode --config "$CONFIG_FILE" < "$TASK_FILE" >> "$LOG_FILE" 2>&1; then
     
     exit 0
 else
-    log "❌ Guardian maintenance failed. Check logs for details."
+    log "❌ All models failed. Guardian maintenance failed."
     exit 1
 fi
